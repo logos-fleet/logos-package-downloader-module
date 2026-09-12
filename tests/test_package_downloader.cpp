@@ -128,6 +128,52 @@ LOGOS_TEST(getCatalogForRepo_parses_scoped_json) {
     LOGOS_ASSERT_TRUE(t.cFunctionCalled("getCatalogForRepoJson"));
 }
 
+// The per-module links a Store shell needs (guideline 4.7.1 / 4.7.4) are
+// CATALOG data: logos-package-downloader resolves them from the package's own
+// entry or the repository's template, and this module's job is to not lose them.
+//
+// Which is a real risk and the reason this test exists: getCatalog() parses the
+// lib's JSON and hands it on whole, so any future "project only the fields we
+// know about" refactor would silently drop the report affordance from every
+// catalog row and nothing else would notice.
+LOGOS_TEST(getCatalog_carries_the_report_and_universal_links) {
+    auto t = LogosTestContext("package_downloader");
+    t.mockCFunction("getCatalogJson").returns(
+        R"([{"name":"counter_ui","variants":["web"],
+             "reportUrl":"https://logos.test/report?module=counter_ui",
+             "universalLink":"https://logos.test/m/counter_ui",
+             "versions":[{"manifest":{"version":"1.0.0"}}]}])");
+    PackageDownloaderImpl impl;
+
+    LogosList catalog = impl.getCatalog();
+    LOGOS_ASSERT_EQ(catalog.size(), static_cast<size_t>(1));
+    LOGOS_ASSERT_EQ(catalog[0]["reportUrl"].get<std::string>(),
+                    std::string("https://logos.test/report?module=counter_ui"));
+    LOGOS_ASSERT_EQ(catalog[0]["universalLink"].get<std::string>(),
+                    std::string("https://logos.test/m/counter_ui"));
+    // And the variant list beside them, which is what per-variant availability
+    // is computed from.
+    LOGOS_ASSERT_EQ(catalog[0]["variants"].size(), static_cast<size_t>(1));
+}
+
+LOGOS_TEST(listRepositories_carries_the_link_templates) {
+    // A "Manage Repositories" screen shows what a repository promises, and a
+    // catalog author needs to see their template arrived.
+    auto t = LogosTestContext("package_downloader");
+    t.mockCFunction("listRepositoriesJson").returns(
+        R"([{"url":"https://logos.test/logos-repo.json","enabled":true,
+             "reportUrlTemplate":"https://logos.test/report?module={name}",
+             "universalLinkTemplate":"https://logos.test/m/{name}"}])");
+    PackageDownloaderImpl impl;
+
+    LogosList repos = impl.listRepositories();
+    LOGOS_ASSERT_EQ(repos.size(), static_cast<size_t>(1));
+    LOGOS_ASSERT_EQ(repos[0]["reportUrlTemplate"].get<std::string>(),
+                    std::string("https://logos.test/report?module={name}"));
+    LOGOS_ASSERT_EQ(repos[0]["universalLinkTemplate"].get<std::string>(),
+                    std::string("https://logos.test/m/{name}"));
+}
+
 // ── resolveDependencies (preview, no download) ───────────────────────────
 
 LOGOS_TEST(resolveDependencies_passes_resolver_output_through) {

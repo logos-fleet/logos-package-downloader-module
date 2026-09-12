@@ -42,6 +42,22 @@ public:
     LogosMap  setRepositoryEnabled(const std::string& url, bool enabled);
     LogosList listRepositories();
     LogosMap  refreshCatalog();
+
+    // The merged catalog, one entry per package, passed through from the lib
+    // whole. Beyond the package metadata each entry carries three fields a
+    // Store shell's App Manager is built on:
+    //
+    //   variants       what the NEWEST version ships, so a caller can answer
+    //                  "will this run here" before any bytes move. Feed it to
+    //                  package_manager's variantAvailability / catalogAvailability
+    //   reportUrl      where a user reports this module (guideline 4.7.1)
+    //   universalLink  the link that addresses this module from outside the app
+    //                  (guideline 4.7.4)
+    //
+    // The two links come from the package's own entry when it declares them, and
+    // otherwise from the repository's `reportUrlTemplate` /
+    // `universalLinkTemplate` with `{name}` and `{version}` expanded. Both keys
+    // are always present and are empty when nothing declared them.
     LogosList getCatalog();
     LogosList getCatalogForRepo(const std::string& repoUrlOrName);
 
