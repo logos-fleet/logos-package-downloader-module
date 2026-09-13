@@ -31,6 +31,22 @@
         package_downloader = {
           input = inputs.logos-package-downloader;
           packages.default = "lib";
+          # THE SAME LIBRARY, FOR A PHONE. `generate` stages a BUILD-platform
+          # image into lib/ and nothing in logos-module-builder can recompile it
+          # -- it comes from its own flake -- so the mobile Bare build asks here,
+          # per target.
+          #
+          # `legacyPackages.<buildSystem>.mobile.<target>.lib`: an iOS
+          # derivation's `system` is its BUILD platform, so the archive cannot
+          # live under `packages.<target>`. It is ONE self-contained archive
+          # (curl, OpenSSL and lgx folded in by logos-package-downloader), which
+          # is why EXTERNAL_LIBS below still names one library.
+          #
+          # Only the two iOS targets exist; aarch64-android resolves to null and
+          # logos-module-builder refuses THAT target by name.
+          mobilePackages = { system, buildSystem, ... }:
+            inputs.logos-package-downloader.legacyPackages.${buildSystem}.mobile.${system}.lib
+              or null;
         };
       };
       tests = {
