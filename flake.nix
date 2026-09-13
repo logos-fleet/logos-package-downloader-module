@@ -45,8 +45,8 @@
           # Only the two iOS targets exist; aarch64-android resolves to null and
           # logos-module-builder refuses THAT target by name.
           mobilePackages = { system, buildSystem, ... }:
-            ((inputs.logos-package-downloader.legacyPackages.${buildSystem} or { }).mobile
-              or { }).${system}.lib or null;
+            inputs.logos-package-downloader.legacyPackages.${buildSystem}.mobile.${system}.lib
+              or null;
         };
       };
       tests = {
