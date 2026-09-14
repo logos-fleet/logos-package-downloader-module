@@ -36,14 +36,17 @@
           # -- it comes from its own flake -- so the mobile Bare build asks here,
           # per target.
           #
-          # `legacyPackages.<buildSystem>.mobile.<target>.lib`: an iOS
+          # `legacyPackages.<buildSystem>.mobile.<target>.lib`: a CROSS
           # derivation's `system` is its BUILD platform, so the archive cannot
           # live under `packages.<target>`. It is ONE self-contained archive
           # (curl, OpenSSL and lgx folded in by logos-package-downloader), which
           # is why EXTERNAL_LIBS below still names one library.
           #
-          # Only the two iOS targets exist; aarch64-android resolves to null and
-          # logos-module-builder refuses THAT target by name.
+          # All three mobile targets are there. iOS is static because it loads
+          # no dynamic library of its own; Android is static because logos-nix's
+          # DT_NEEDED gate refuses the unbundled sonames the shared build would
+          # put in the APK. `or null` stays so a target with no build is refused
+          # BY NAME by logos-module-builder rather than in the linker.
           mobilePackages = { system, buildSystem, ... }:
             inputs.logos-package-downloader.legacyPackages.${buildSystem}.mobile.${system}.lib
               or null;
